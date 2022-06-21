@@ -1,0 +1,4 @@
+@startuml
+skinparam DefaultFontSize 11
+a -> b
+@enduml
