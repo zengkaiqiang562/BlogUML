@@ -1,0 +1,46 @@
+/' 
+```sequence
+participant BI as BridgeInterceptor
+participant RIC as RealInterceptorChain
+participant CI as CacheInterceptor
+
+BI ->> BI : intercept(nextChain)
+activate BI
+    BI ->> BI : reqeust = nextChain.request()
+    BI ->> BI : 对 request 中的请求头信息进行补充扩展
+    BI ->> RIC : nextChain.proceed(reqeust)
+    activate RIC
+        RIC ->> RIC : curInterceptor = interceptors.get(index)
+        RIC ->> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1, request, ...)
+        RIC ->> CI : curInterceptor.intercept(nextChain)
+        CI -->> RIC : return response
+    deactivate RIC
+    RIC -->> BI : return response
+    BI ->> BI : 对 response 进行必要的封装
+    BI ->> BI : return response
+deactivate BI
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+participant  BridgeInterceptor as BI
+participant  RealInterceptorChain as RIC
+participant  CacheInterceptor as CI
+
+[-> BI : intercept(nextChain)
+activate BI
+    BI -> BI : reqeust = nextChain.request()
+    BI -> BI : 对 request 中的请求头信息进行补充扩展
+    BI -> RIC : nextChain.proceed(reqeust)
+    activate RIC
+        RIC -> RIC : curInterceptor = interceptors.get(index)
+        RIC -> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1, request, ...)
+        RIC -> CI ++ : curInterceptor.intercept(nextChain)
+        CI --> RIC -- : return response
+        RIC --> BI : return response
+    deactivate RIC
+    BI -> BI : 对 response 进行必要的封装
+    [<- BI : return response
+deactivate BI
+@enduml

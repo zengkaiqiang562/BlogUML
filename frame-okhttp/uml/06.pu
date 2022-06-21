@@ -1,0 +1,62 @@
+/' 
+```sequence
+participant CI as CacheInterceptor
+participant RIC as RealInterceptorChain
+participant ConI as ConnectInterceptor
+
+CI ->> CI : intercept(nextChain)
+activate CI
+    CI ->> CI : reqeust = nextChain.request()
+    CI ->> CI : cacheResponse = cache.get(request)
+    alt CacheStrategy.networkRequest == null，使用缓存的响应数据
+        CI ->> CI : return cacheResponse
+    else 获取网络中的响应数据
+        Note over CI,RIC : networkRequest 其实就是 nextChain.request() 返回的
+        CI ->> RIC : nextChain.proceed(networkRequest)  
+        activate RIC
+            RIC ->> RIC : curInterceptor = interceptors.get(index)
+            RIC ->> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1,    request, ...)
+            RIC ->> ConI : curInterceptor.intercept(nextChain)
+            ConI -->> RIC : return response
+        deactivate RIC
+        RIC -->> CI : return response
+        Note over CI : 缓存从网络中获取到的 response
+        CI ->> CI : cache.put(response)
+        CI ->> CI : return response
+    end
+deactivate CI
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+participant   CacheInterceptor as CI
+participant   RealInterceptorChain as RIC
+participant   ConnectInterceptor as ConI
+
+[-> CI : intercept(nextChain)
+activate CI
+    CI -> CI : reqeust = nextChain.request()
+    CI -> CI : cacheResponse = cache.get(request)
+    
+    alt CacheStrategy.networkRequest == null，使用缓存的响应数据
+    ||15||
+        [<-- CI : return cacheResponse
+    ||15||
+    else 获取网络中的响应数据
+        rnote over CI,RIC : networkRequest 其实就是 nextChain.request() 返回的
+        CI -> RIC : nextChain.proceed(networkRequest)  
+        activate RIC
+            RIC -> RIC : curInterceptor = interceptors.get(index)
+            RIC -> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1,    request, ...)
+            RIC -> ConI ++ : curInterceptor.intercept(nextChain)
+            ConI --> RIC -- : return response
+            RIC --> CI : return response
+        deactivate RIC
+        rnote over CI : 缓存从网络中获取到的 response
+        CI -> CI : cache.put(response)
+        [<-- CI : return response
+        ||5||
+    end
+deactivate CI
+@enduml

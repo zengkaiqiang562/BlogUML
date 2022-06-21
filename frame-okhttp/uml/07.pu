@@ -1,0 +1,54 @@
+/' 
+```sequence
+participant ConI as ConnectInterceptor
+participant RIC as RealInterceptorChain
+participant CSI as CallServerInterceptor
+
+ConI ->> ConI : intercept(nextChain)
+activate ConI
+    ConI ->> ConI : reqeust = nextChain.request()
+    Note over ConI : streamAllocation 在重定向拦截器的 intercept 方法中就已经创建好了
+    ConI ->> ConI : streamAllocation = nextChain.streamAllocation()
+    Note over ConI : 调用 newStream 方法获取到可用的 RealConnection 对象，并建立好网络连接。
+    ConI ->> ConI : httpCodec = streamAllocation.newStream(...)
+    Note over ConI : 返回可用的RealConnection对象 connection
+    ConI ->> ConI : connection = streamAllocation.connection()
+    ConI ->> RIC : proceed(request, streamAllocation, httpCodec, connection)
+    activate RIC
+        RIC ->> RIC : curInterceptor = interceptors.get(index)
+        RIC ->> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1,    request, ...)
+        RIC ->> CSI : curInterceptor.intercept(nextChain)
+        CSI -->> RIC : return response
+    deactivate RIC
+    RIC -->> ConI : return response
+    ConI ->> ConI : return response
+deactivate ConI
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+participant   ConnectInterceptor as ConI
+participant   RealInterceptorChain as RIC
+participant   CallServerInterceptor as CSI
+
+?-> ConI : intercept(nextChain)
+activate ConI
+    ConI -> ConI : reqeust = nextChain.request()
+    rnote over ConI : streamAllocation 在重定向拦截器的 intercept 方法中就已经创建好了
+    ConI -> ConI : streamAllocation = nextChain.streamAllocation()
+    rnote over ConI : 调用 newStream 方法获取到可用的 RealConnection 对象，并建立好网络连接。
+    ConI -> ConI : httpCodec = streamAllocation.newStream(...)
+    rnote over ConI : 返回可用的RealConnection对象 connection
+    ConI -> ConI : connection = streamAllocation.connection()
+    ConI -> RIC : proceed(request, streamAllocation, httpCodec, connection)
+    activate RIC
+        RIC -> RIC : curInterceptor = interceptors.get(index)
+        RIC -> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1,    request, ...)
+        RIC -> CSI ++ : curInterceptor.intercept(nextChain)
+        CSI --> RIC -- : return response
+        RIC --> ConI : return response
+    deactivate RIC
+    ?<-- ConI : return response
+deactivate ConI
+@enduml

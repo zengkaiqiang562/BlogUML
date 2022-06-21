@@ -1,0 +1,42 @@
+/' 
+```sequence
+participant RNFUI as RetryAndFollowUpInterceptor
+participant RIC as RealInterceptorChain
+participant BI as BridgeInterceptor
+
+RNFUI ->> RNFUI : intercept(nextChain)
+activate RNFUI
+    RNFUI ->> RNFUI : reqeust = nextChain.request()
+    RNFUI ->> RIC : nextChain.proceed(reqeust)
+    activate RIC
+        RIC ->> RIC : curInterceptor = interceptors.get(index)
+        RIC ->> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1, request, ...)
+        RIC ->> BI : curInterceptor.intercept(nextChain)
+        BI -->> RIC : return response
+    deactivate RIC
+    RIC -->> RNFUI : return response
+    RNFUI ->> RNFUI : return response
+deactivate RNFUI
+```
+ '/
+
+@startuml
+skinparam DefaultFontSize 11
+participant  RetryAndFollowUpInterceptor as RNFUI
+participant  RealInterceptorChain as RIC
+participant  BridgeInterceptor as BI
+
+[-> RNFUI : intercept(nextChain)
+activate RNFUI
+    RNFUI -> RNFUI : reqeust = nextChain.request()
+    RNFUI -> RIC : nextChain.proceed(reqeust)
+    activate RIC
+        RIC -> RIC : curInterceptor = interceptors.get(index)
+        RIC -> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1, request, ...)
+        RIC -> BI ++ : curInterceptor.intercept(nextChain)
+        BI --> RIC -- : return response
+        RIC --> RNFUI : return response
+    deactivate RIC
+    [<-- RNFUI : return response
+deactivate RNFUI
+@enduml

@@ -1,0 +1,72 @@
+/' 
+```sequence
+participant CSI as CallServerInterceptor
+participant HC as Http1Codec
+
+Note over CSI : 这里不会再调用 nextChain.proceed 方法了，因为不存在下一个拦截器了。
+CSI ->> CSI : intercept(nextChain)
+activate CSI
+    CSI ->> CSI : request = nextChain.request()
+    CSI ->> CSI : streamAllocation = nextChain.streamAllocation()
+    Note over CSI : 对于 http 1.1，这里返回的 httpCodec 就是 Http1Codec
+    Note over CSI : Http1Codec.sink 用来发送请求数据
+    Note over CSI : Http1Codec.source 用来读取响应数据
+    CSI ->> CSI : httpCodec = nextChain.httpStream()
+    CSI ->> CSI : connection = nextChain.connection()
+    Note over CSI,HC : 向 Http1Codec.sink 中写入请求头信息
+    CSI ->> HC : writeRequestHeaders(request)
+    opt request.method() == "POST" && request.body() != null
+        Note over CSI,HC : 向 Http1Codec.sink 中写入请求体信息
+        CSI ->> HC : request.body().writeTo(BufferedSink)
+    end
+    Note over CSI,HC : 将 Http1Codec.sink 中的请求数据刷新到IO流中，发送给服务器
+    CSI ->> HC : finishRequest()
+    Note over CSI,HC : 通过 Http1Codec.source 读取网络IO中返回的响应头信息
+    CSI ->> HC : readResponseHeaders
+    HC -->> CSI : return responseBuilder
+    CSI ->> CSI : responseBuilder.build() 构建封装响应数据的对象response
+    CSI ->> HC : openResonseBody
+    Note over CSI,HC : responseBody 只是持有 Http1Codec.source，还未从网络IO中读取响应体数据
+    HC ->> CSI : return responseBody
+    CSI ->> CSI : response.body(responseBody)
+    CSI ->>  CSI : return  response
+deactivate CSI
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+participant   CallServerInterceptor as CSI
+participant   Http1Codec as HC
+
+rnote over CSI : 这里不会再调用 nextChain.proceed 方法了，因为不存在下一个拦截器了。
+?-> CSI : intercept(nextChain)
+activate CSI
+    CSI -> CSI : request = nextChain.request()
+    CSI -> CSI : streamAllocation = nextChain.streamAllocation()
+    rnote over CSI : 对于 http 1.1，这里返回的 httpCodec 就是 Http1Codec
+    rnote over CSI : Http1Codec.sink 用来发送请求数据
+    rnote over CSI : Http1Codec.source 用来读取响应数据
+    CSI -> CSI : httpCodec = nextChain.httpStream()
+    CSI -> CSI : connection = nextChain.connection()
+    rnote over CSI,HC : 向 Http1Codec.sink 中写入请求头信息
+    CSI -> HC : writeRequestHeaders(request)
+    opt request.method() == "POST" && request.body() != null
+    ||5||
+        rnote over CSI,HC : 向 Http1Codec.sink 中写入请求体信息
+        CSI -> HC : request.body().writeTo(BufferedSink)
+    ||5||
+    end
+    rnote over CSI,HC : 将 Http1Codec.sink 中的请求数据刷新到IO流中，发送给服务器
+    CSI -> HC : finishRequest()
+    rnote over CSI,HC : 通过 Http1Codec.source 读取网络IO中返回的响应头信息
+    CSI -> HC ++ : readResponseHeaders
+    HC --> CSI -- : return responseBuilder
+    CSI -> CSI : responseBuilder.build() 构建封装响应数据的对象response
+    CSI -> HC ++ : openResonseBody
+    rnote over CSI,HC : responseBody 只是持有 Http1Codec.source，还未从网络IO中读取响应体数据
+    HC --> CSI -- : return responseBody
+    CSI -> CSI : response.body(responseBody)
+    ?<-- CSI : return  response
+deactivate CSI
+@enduml

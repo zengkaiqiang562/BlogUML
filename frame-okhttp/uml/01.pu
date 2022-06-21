@@ -1,0 +1,54 @@
+
+/' 
+```sequence
+participant RC as RealCall
+participant D as Dispatcher
+participant RIC as RealInterceptorChain
+
+RC ->> RC : execute()
+
+opt executed == false
+RC ->> D : executed(call)
+D ->> D : runningSyncCalls.add(call)
+
+RC ->> RC : result = getResponseWithInterceptorChain()
+activate RC
+    RC ->> RC : new RealInterceptorChain
+    RC ->> RIC : proceed(request)
+    RIC ->> RC : response
+deactivate RC
+
+RC ->> D : finished(call)
+
+RC ->> RC : return result
+end
+```
+ '/
+@startuml
+' skinparam defaultFontName   "Consolas"
+' skinparam defaultFontName   "Verdana"
+' skinparam defaultFontName   "Monospace"
+skinparam defaultFontSize   11
+
+participant RealCall as RC
+participant Dispatcher as D
+participant RealInterceptorChain as RIC
+
+[-> RC : execute()
+
+opt executed == false
+RC -> D : executed(call)
+D -> D : runningSyncCalls.add(call)
+
+RC -> RC : result = getResponseWithInterceptorChain()
+activate RC
+    RC -> RC : new RealInterceptorChain
+    RC -> RIC : proceed(request)
+    RIC -> RC : response
+deactivate RC
+
+RC -> D : finished(call)
+
+[<- RC : return result
+end
+@enduml

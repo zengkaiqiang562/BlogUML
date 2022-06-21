@@ -1,0 +1,73 @@
+/' 
+```sequence
+participant RC as RealCall
+participant RIC as RealInterceptorChain
+participant AC as RealCall.AsyncCall
+participant D as Dispatcher
+participant ES as ExecutorService
+
+RC ->> RC : enqueue(callback)
+
+opt executed == false
+
+    RC ->> RC : new AysncCall(callback)
+
+    RC ->> D : enqueue(asyncCall)
+    alt runningAsyncCalls.size < maxRequests && runningCallsForHost(call) < maxRequestPerHost
+        D ->> D : runningAsyncCalls.add(asyncCall)
+        D ->> ES : execute(asyncCall)
+        ES ->> AC : run()
+
+        AC ->> AC : execute()
+        activate AC
+            AC ->> RC : getResponseWithInterceptorChain()
+            activate RC
+                RC ->> RC : new RealInterceptorChain
+                RC ->> RIC : proceed(request)
+                RIC ->> RC : response
+            deactivate RC
+            RC ->> AC : response
+            AC ->> AC : callback.onResponse(realCall, response)
+            AC ->> D : finished(asyncCall)
+        deactivate AC
+    else
+        D ->> D : readyAsyncCalls.add(asyncCall)
+    end
+
+end
+```
+ '/
+skinparam defaultFontSize   11
+
+participant RealCall as RC
+participant RealInterceptorChain as RIC
+participant RealCall.AsyncCall as AC
+participant Dispatcher as D
+participant ExecutorService as ES
+
+[-> RC : enqueue(callback)
+
+opt executed == false
+
+    RC -> RC : new AysncCall(callback)
+
+    RC -> D : enqueue(asyncCall)
+    alt runningAsyncCalls.size < maxRequests && runningCallsForHost(call) < maxRequestPerHost
+        D -> D : runningAsyncCalls.add(asyncCall)
+        D -> ES : execute(asyncCall)
+        ES -> AC : run()
+
+        AC -> AC : execute()
+        activate AC
+            AC -> RC ++ : getResponseWithInterceptorChain()
+                RC -> RC : new RealInterceptorChain
+                RC -> RIC ++ : proceed(request)
+                RIC -> RC -- : response
+            RC -> AC -- : response
+            AC -> AC : callback.onResponse(realCall, response)
+            AC -> D : finished(asyncCall)
+        deactivate AC
+    else runningAsyncCalls.size >= maxRequests || runningCallsForHost(call) >= maxRequestPerHost
+        D -> D : readyAsyncCalls.add(asyncCall)
+    end
+end

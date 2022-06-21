@@ -1,0 +1,47 @@
+/' 
+```sequence
+participant RC as RealCall
+participant RIC as RealInterceptorChain
+participant RNFUI as RetryAndFollowUpInterceptor
+
+RC ->> RC : getResponseWithInterceptorChain()
+activate RC
+    Note over RC : index 初始为 0，准备从 interceptors 中的第 1 个拦截器开始处理
+    RC ->> RC : chain = new RealInterceptorChain(interceptors, ..., 0, request, ...)
+    RC ->> RIC : proceed(request)
+    activate RIC
+        RIC ->> RIC : curInterceptor = interceptors.get(index)
+        Note over RIC : 递增 index，当前拦截器拦截后，为下一个拦截器做准备
+        RIC ->> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1, request, ...)
+        RIC ->> RNFUI : curInterceptor.intercept(nextChain)
+        RNFUI -->> RIC : return response
+    deactivate RIC
+    RIC -->> RC : return response
+    RC ->> RC : return response
+deactivate RC
+```
+ '/
+ 
+@startuml
+skinparam defaultFontSize 11
+
+participant RealCall as  RC
+participant RealInterceptorChain as RIC
+participant RetryAndFollowUpInterceptor as RNFUI
+
+[-> RC : getResponseWithInterceptorChain()
+activate RC
+    rnote over RC : index 初始为 0，准备从 interceptors 中的第 1 个拦截器开始处理
+    RC -> RC : chain = new RealInterceptorChain(interceptors, ..., 0, request, ...)
+    RC -> RIC : proceed(request)
+    activate RIC
+        RIC -> RIC : curInterceptor = interceptors.get(index)
+        rnote over RIC : 递增 index，当前拦截器拦截后，为下一个拦截器做准备
+        RIC -> RIC : nextChain = new RealInterceptorChain(interceptors, ..., index + 1, request, ...)
+        RIC -> RNFUI ++ : curInterceptor.intercept(nextChain)
+        RNFUI --> RIC -- : return response
+        RIC --> RC : return response
+    deactivate RIC
+    [<- RC : return response
+deactivate RC
+ @enduml
