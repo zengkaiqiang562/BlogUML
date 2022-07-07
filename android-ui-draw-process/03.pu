@@ -1,0 +1,108 @@
+/'
+```sequence
+participant WMI as WindowManagerImpl
+participant WMG as WindowManagerGlobal
+participant VRI as ViewRootImpl
+participant D as DecorView
+participant C as Choreographer
+WMI ->> WMG : addView(view, params, ...)
+WMG ->> WMG : root = new ViewRootImpl(...)
+WMG ->> VRI : root = setView(view, wparams, ...)
+VRI ->> VRI : requestLayout()
+activate VRI
+VRI ->> VRI : scheduleTraversals()
+VRI ->> C : postCallback(Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, ...)
+deactivate VRI
+C ->> VRI : mTraversalRunnable.run()
+VRI ->> VRI : doTraversal()
+
+VRI ->> VRI : performTraversals()
+activate VRI
+
+%% 测量流程
+opt layoutRequested is true
+VRI ->> VRI : measureHierarchy
+activate VRI
+VRI ->> VRI : performMeasure
+VRI ->> D : measure
+D ->> D : onMeasure
+deactivate VRI
+end
+Note over VRI : 以上是首次测量流程，但测量流程可能会重复多次
+
+%% 布局流程
+opt didLayout is true
+VRI ->> VRI : performLayout
+activate VRI
+VRI ->> D : layout
+D ->> D : onLayout
+deactivate VRI
+end
+
+%% 绘画流程
+VRI ->> VRI : performDraw
+activate VRI
+VRI ->> VRI : draw
+VRI ->> VRI : drawSoftware
+VRI ->> D : draw
+D ->> D : onDraw
+deactivate VRI
+
+deactivate VRI
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+
+participant   WindowManagerImpl as   WMI
+participant   WindowManagerGlobal as WMG
+participant   ViewRootImpl as VRI
+participant   DecorView as  D
+participant   Choreographer as C
+
+WMI -> WMG : addView(view, params, ...)
+WMG -> WMG : root = new ViewRootImpl(...)
+WMG -> VRI : root.setView(view, wparams, ...)
+VRI -> VRI : requestLayout()
+activate VRI
+    VRI -> VRI : scheduleTraversals()
+    VRI -> C : postCallback(Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, ...)
+deactivate VRI
+C -> VRI : mTraversalRunnable.run()
+VRI -> VRI : doTraversal()
+
+VRI -> VRI : performTraversals()
+activate VRI
+
+    ' 测量流程
+    opt layoutRequested is true
+    VRI -> VRI : measureHierarchy
+    activate VRI
+        VRI -> VRI : performMeasure
+        VRI -> D : measure
+        D -> D : onMeasure
+    deactivate VRI
+    end
+    Note over VRI : 以上是首次测量流程，但测量流程可能会重复多次
+
+    ' 布局流程
+    opt didLayout is true
+    VRI -> VRI : performLayout
+    activate VRI
+        VRI -> D : layout
+        D -> D : onLayout
+    deactivate VRI
+    end
+
+    ' 绘画流程
+    VRI -> VRI : performDraw
+    activate VRI
+        VRI -> VRI : draw
+        VRI -> VRI : drawSoftware
+        VRI -> D : draw
+        D -> D : onDraw
+    deactivate VRI
+
+deactivate VRI
+@enduml

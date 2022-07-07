@@ -1,0 +1,117 @@
+/'
+
+```sequence
+participant APPT as ActivityThread.ApplicationThread
+participant ATH as ActivityThread.H
+participant AT as ActivityThread
+participant LA as LoadedApk
+participant A as Activity
+participant I as Instrumentation
+participant WMI as WindowManagerImpl
+
+APPT ->> APPT : scheduleLaunchActivity
+APPT ->> ATH : sendMessage(H.LAUNCH_ACTIVITY, r)
+ATH ->> AT : handleLaunchActivity
+activate AT
+AT ->> AT : performLaunchActivity
+activate AT
+AT ->> I : newActivity
+I -->> AT : return Activity
+AT ->> LA : makeApplication
+alt mApplication != null
+LA -->> AT : return mApplication
+else mApplication == null
+LA ->> I : newApplication
+I -->> LA : return app
+LA -->> AT : return mApplication
+end
+AT ->> A : attach
+AT ->> I : callActivityOnCreate
+I ->> A : performCreate
+A ->> A : onCreate
+AT ->> A : performStart
+A ->> I : callActivityOnStart
+I ->> A : onStart
+deactivate AT
+AT ->> AT : handleResumeActivity
+activate AT
+AT ->> AT : performResumeActivity
+activate AT
+AT ->> A : performResume
+A ->> A : performRestart
+activate A
+opt mStopped == true
+A ->> I : callActivityOnRestart
+I ->> A : onRestart
+A ->> A : performStart
+I ->> A : callActivityOnStart
+A ->> A : onStart
+end
+deactivate A
+A ->> I : callActivityOnResume
+I ->> A : onResume
+deactivate AT
+AT ->> WMI : wm.addView(decor, l)
+Note over AT,WMI: wm在Activity的构造方法中调用PhoneWindow.setWindowManager时创建
+deactivate AT
+deactivate AT
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+participant   ActivityThread.ApplicationThread as APPT
+participant   ActivityThread.H as ATH
+participant   ActivityThread as AT
+participant   LoadedApk as LA
+participant   Activity as A 
+participant   Instrumentation as I
+participant   WindowManagerImpl as WMI
+
+[-> APPT : scheduleLaunchActivity
+APPT -> ATH : sendMessage(H.LAUNCH_ACTIVITY, r)
+ATH -> AT : handleLaunchActivity
+activate AT
+    AT -> AT : performLaunchActivity
+    activate AT
+        AT -> I ++ : newActivity
+        I --> AT -- : return Activity
+        AT -> LA  ++ : makeApplication
+        alt mApplication != null
+        LA --> AT : return mApplication
+        else mApplication == null
+        LA -> I ++ : newApplication
+        I --> LA -- : return app
+        LA --> AT  -- : return mApplication
+        end
+        AT -> A : attach
+        AT -> I : callActivityOnCreate
+        I -> A : performCreate
+        A -> A : onCreate
+        AT -> A : performStart
+        A -> I : callActivityOnStart
+        I -> A : onStart
+    deactivate AT
+    AT -> AT : handleResumeActivity
+    activate AT
+        AT -> AT : performResumeActivity
+        activate AT
+            AT -> A : performResume
+            A -> A : performRestart
+            activate A
+                opt mStopped == true
+                A -> I : callActivityOnRestart
+                I -> A : onRestart
+                A -> A : performStart
+                I -> A : callActivityOnStart
+                A -> A : onStart
+            end
+            deactivate A
+            A -> I : callActivityOnResume
+            I -> A : onResume
+        deactivate AT
+        AT -> WMI : wm.addView(decor, l)
+        Note over AT,WMI: wm在Activity的构造方法中调用PhoneWindow.setWindowManager时创建
+    deactivate AT
+deactivate AT
+@enduml

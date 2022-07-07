@@ -1,0 +1,53 @@
+/'
+```sequence
+participant A as Activity
+participant I as Instrumentation
+participant APPT as ActivityThread.ApplicationThread
+participant AMS as ActivityManagerService
+participant ASS as ActivityStackSupervisor
+participant AS as ActivityStack
+
+A ->> A : startActivity
+A ->> A : startActivityForResult
+A ->> I : execStartActivity
+I ->> AMS : startActivity
+AMS ->> AMS : startActivityAsUser
+AMS ->> ASS : startActivityMayWait
+ASS ->> ASS : startActivityLocked
+ASS ->> ASS : startActivityUncheckedLocked
+ASS ->> AS : startActivityLocked
+AS ->> ASS : resumeTopActivitiesLocked
+ASS ->> AS : resumeTopActivityLocked
+AS ->> AS : resumeTopActivityInnerLocked
+AS ->> ASS : startSpecificActivityLocked
+ASS ->> ASS : realStartActivityLocked
+ASS ->> APPT : scheduleLaunchActivity
+```
+'/
+
+@startuml
+skinparam DefaultFontSize 11
+
+participant   Activity as A
+participant   Instrumentation as I
+participant   ActivityThread.ApplicationThread as APPT 
+participant   ActivityManagerService as AMS
+participant   ActivityStackSupervisor as ASS
+participant   ActivityStack as AS
+
+[-> A : startActivity
+A -> A : startActivityForResult
+A -> I : execStartActivity
+I -> AMS : binder 调用：startActivity
+AMS -> AMS : startActivityAsUser
+AMS -> ASS : startActivityMayWait
+ASS -> ASS : startActivityLocked
+ASS -> ASS : startActivityUncheckedLocked
+ASS -> AS : startActivityLocked
+AS -> ASS : resumeTopActivitiesLocked
+ASS -> AS : resumeTopActivityLocked
+AS -> AS : resumeTopActivityInnerLocked
+AS -> ASS : startSpecificActivityLocked
+ASS -> ASS : realStartActivityLocked
+ASS -> APPT : binder 调用：scheduleLaunchActivity
+@enduml
